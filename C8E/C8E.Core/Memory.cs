@@ -17,22 +17,20 @@ internal sealed class Memory
     {
         get
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(address, _data.Length);
-
+            EnsureValidAddress(address);
             return _data[address];
         }
         set
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(address, _data.Length);
-
+            EnsureValidAddress(address);
             _data[address] = value;
         }
     }
 
     public ushort ReadOpCode(int address)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(address);
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(address, _data.Length - 1);
+        EnsureValidAddress(address);
+        EnsureValidAddress(address + 1);
 
         return (ushort)((_data[address] << 8) | _data[address + 1]);
     }
@@ -44,11 +42,19 @@ internal sealed class Memory
         if (rom.Length == 0)
             throw new ArgumentException("ROM is empty.", nameof(rom));
 
-        ArgumentOutOfRangeException.ThrowIfNegative(address);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(address, _data.Length - rom.Length);
+        EnsureValidAddress(address);
+
+        if (address < 0 || address + rom.Length > _data.Length)
+            throw new ArgumentOutOfRangeException(nameof(address), "ROM does not fit into memory.");
 
         Array.Copy(rom, 0, _data, address, rom.Length);
     }
 
     public void Reset() => Array.Clear(_data);
+
+    private void EnsureValidAddress(int address)
+    {
+        if (address < 0 || address >= _data.Length)
+            throw new ArgumentOutOfRangeException(nameof(address), $"Address {address} is out of range.");
+    }
 }
